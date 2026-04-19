@@ -1,4 +1,0 @@
-modelos
-servicios
-test
-utils
