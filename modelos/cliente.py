@@ -45,6 +45,7 @@ class Cliente:
             self.__email = nuevo_email
         except Exception as e:
             caja_negra.registrar_error("asignar Email", e)
+            raise
     
     @property
     def contraseña(self):
@@ -90,7 +91,8 @@ class Cliente:
             self.__contraseña = self.__encriptar_clave(nueva_contraseña, self.__salt)
         except Exception as e:
             caja_negra.registrar_error("cambio de contraseña / hashing", e)
-    
+            raise
+
     @property
     def rol_id(self):
         return self.__rol_id
@@ -108,6 +110,7 @@ class Cliente:
                 raise ValueError(f"Rol {rol} no reconocido por el sistema.")
         except Exception as e:
             caja_negra.registrar_error("asignar rol", e)
+            raise
     
     @property
     def estado_cliente_id(self):
@@ -126,6 +129,7 @@ class Cliente:
                 raise ValueError(f'Estado {estado} no reconocido por el sistema.')
         except Exception as e:
             caja_negra.registrar_error("asignar estado", e)
+            raise
     
     @property
     def tipo_cliente_id(self):
@@ -143,7 +147,8 @@ class Cliente:
             else:
                 raise ValueError(f'Tipo de cliente {tipo_cliente} no reconocido por el sistema.')
         except Exception as e:
-            caja_negra.registrar_error("asignar tipo de cliente", e)    
+            caja_negra.registrar_error("asignar tipo de cliente", e)
+            raise  
 
     def __str__(self):
         return f'Cliente(ID: {self.__cliente_id}, Email: {self.__email}, tipo de cliente: {self.__tipo_cliente_id})'
@@ -177,7 +182,7 @@ class Cliente:
         
     def suspender_cuenta(self):
         """cambia el estado a suspendido, lo registra en auditoria del sistema y historial de cuenta"""
-        self.__estado_cliente_id = EstadoCliente.SUSPENDIDO
+        self.__estado_cliente_id = EstadoCliente.SUSPENDIDO.value
 
     @classmethod
     def cargar_cliente_db(cls, email, contraseña, rol_id, estado_cliente_id, tipo_cliente_id, cliente_id, fecha_registro, salt):
