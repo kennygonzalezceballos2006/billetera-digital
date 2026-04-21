@@ -12,7 +12,7 @@ class Cliente:
     Representa un usuario dentro del sistema financiero.
     Gestiona validaciones de seguridad y estados de cuenta.
     """
-    def __init__(self, email: str, contraseña: str, rol_id: Roles, estado_cliente_id: EstadoCliente, tipo_cliente_id: TipoCliente, cliente_id: int = None):
+    def __init__(self, email: str, contraseña: str, rol_id: int, estado_cliente_id: int, tipo_cliente_id: int, cliente_id: int = None):
         """
         inicializa un nuevo cliente, el id por defecto es None, si en caso tal no hay registro de el
         de mismo modo la fecha se asgina la actual, si esta registrado devuelve la original
@@ -180,9 +180,21 @@ class Cliente:
 
             return False
         
-    def suspender_cuenta(self):
-        """cambia el estado a suspendido, lo registra en auditoria del sistema y historial de cuenta"""
-        self.__estado_cliente_id = EstadoCliente.SUSPENDIDO.value
+    def suspender(self):
+        """cambia el estado a suspendido, lo registra en historial"""
+        self.estado_cliente_id = EstadoCliente.SUSPENDIDO.value
+
+    def bloquear(self):
+        """cambia el estado a bloqueado, lo registra en historial"""
+        self.estado_cliente_id = EstadoCliente.BLOQUEADO.value
+
+    def activar(self):
+        """cambia el estado a activo, lo registra en historial"""
+        self.estado_cliente_id = EstadoCliente.ACTIVO.value
+
+    def desactivar(self):
+        """cambia el estado a inactivo, lo registra en historial"""
+        self.estado_cliente_id = EstadoCliente.INACTIVO.value
 
     @classmethod
     def cargar_cliente_db(cls, email, contraseña, rol_id, estado_cliente_id, tipo_cliente_id, cliente_id, fecha_registro, salt):
