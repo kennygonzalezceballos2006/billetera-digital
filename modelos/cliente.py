@@ -197,7 +197,7 @@ class Cliente:
         self.estado_cliente_id = EstadoCliente.INACTIVO.value
 
     @classmethod
-    def cargar_cliente_db(cls, email, contraseña, rol_id, estado_cliente_id, tipo_cliente_id, cliente_id, fecha_registro, salt):
+    def cargar_cliente_db(cls, **datos):
         """
         Reconstruye un cliente a partir de los datos que ya estan en la BD.
         Aqui la contraseña ya es un hash y la "sal" ya existe.
@@ -208,14 +208,14 @@ class Cliente:
 
         #se asigna directamente los valores a los atributos privados
         #saltandose los setters para no validar nada
-        cliente_existente._Cliente__cliente_id = cliente_id
-        cliente_existente._Cliente__email = email
-        cliente_existente._Cliente__contraseña = contraseña # <- aqui ya viene la contraseña hasheada
-        cliente_existente._Cliente__salt = salt             # la "sal" guardada
-        cliente_existente._Cliente__rol_id = rol_id
-        cliente_existente._Cliente__estado_cliente_id = estado_cliente_id
-        cliente_existente._Cliente__tipo_cliente_id = tipo_cliente_id
-        cliente_existente._Cliente__fecha_registro = fecha_registro
+        cliente_existente._Cliente__cliente_id = datos["cliente_id"]
+        cliente_existente._Cliente__email = datos["email"]
+        cliente_existente._Cliente__contraseña = datos["contraseña"] # <- aqui ya viene la contraseña hasheada
+        cliente_existente._Cliente__salt = datos["salt"]             # la "sal" guardada
+        cliente_existente._Cliente__rol_id = datos["rol_id"]
+        cliente_existente._Cliente__estado_cliente_id = datos["estado_cliente_id"]
+        cliente_existente._Cliente__tipo_cliente_id = datos["tipo_cliente_id"]
+        cliente_existente._Cliente__fecha_registro = datos["fecha_registro"]
         cliente_existente._Cliente__intentos_login = 3
 
         return cliente_existente

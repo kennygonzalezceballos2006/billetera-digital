@@ -26,7 +26,7 @@ class Cuenta:
         #ej:"142-260620-27"
         return f'{oficina}-{secuencia}-{control}'
 
-    def __init__(self, cliente_id: int, estado_cuenta_id: int, saldo=0,cuenta_id: int = None):
+    def __init__(self, cliente_id: int, estado_cuenta_id: int, cuenta_id: int = None):
         self.__cliente_id = cliente_id
         self.estado_cuenta = estado_cuenta_id
         self.__numero_cuenta = Cuenta.generar_numero_cuenta()
@@ -184,7 +184,7 @@ class Cuenta:
         return f'Cuenta(ID: {self.__cuenta_id}, Numero: {self.__numero_cuenta}, Saldo: {self.__saldo:,.2f}, Estado: {self.__estado_cuenta})'
     
     @classmethod
-    def cargar_cuenta_bd(cls, cuenta_id, saldo, numero_cuenta, fecha_creacion, cliente_id, estado_cuenta_id):
+    def cargar_cuenta_bd(cls, **datos):
 
         #creamos una instancia "vacia" sin pasar por el __init__ convencional
         cuenta_existente = cls.__new__(cls)
@@ -192,11 +192,11 @@ class Cuenta:
         #se asigna automaticamente los valores a los atributos privados
         #saltandose los setters para no validar nada ya que los datos vienen de la BD
 
-        cuenta_existente._Cuenta__cuenta_id = cuenta_id
-        cuenta_existente._Cuenta__saldo = Decimal(str(saldo)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        cuenta_existente._Cuenta__numero_cuenta = numero_cuenta
-        cuenta_existente._Cuenta__fecha_creacion = fecha_creacion
-        cuenta_existente._Cuenta__cliente_id = cliente_id
-        cuenta_existente._Cuenta__estado_cuenta = estado_cuenta_id
+        cuenta_existente._Cuenta__cuenta_id = datos["cuenta_id"]
+        cuenta_existente._Cuenta__saldo = Decimal(str(datos["saldo"])).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        cuenta_existente._Cuenta__numero_cuenta = datos["numero_cuenta"]
+        cuenta_existente._Cuenta__fecha_creacion = datos["fecha_creacion"]
+        cuenta_existente._Cuenta__cliente_id = datos["cliente_id"]
+        cuenta_existente._Cuenta__estado_cuenta = datos["estado_cuenta_id"]
 
         return cuenta_existente
