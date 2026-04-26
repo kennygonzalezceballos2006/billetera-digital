@@ -1,11 +1,11 @@
 from datetime import datetime
-import re
 from .catalogos.estado_cliente import EstadoCliente
 from .catalogos.roles import Roles
 from .catalogos.tipo_cliente import TipoCliente
-import secrets
-import hashlib
 from .auditoria_sistema import caja_negra
+import re
+import hashlib
+import secrets
 
 class Cliente:
     """
@@ -37,12 +37,14 @@ class Cliente:
         return self._email
     
     @email.setter
-    def email(self,nuevo_email):
+    def email(self,email):
+        #patron estandar para correos
+        patron_gmail = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
         try:
-            if not isinstance(nuevo_email,str) or "@" not in nuevo_email:
-                raise ValueError("email no valido")
+            if not isinstance(email,str) or not re.match(patron_gmail, email):
+                raise ValueError(f"el formato de email {email} no es valido.")
             
-            self._email = nuevo_email
+            self._email = email
         except Exception as e:
             caja_negra.registrar_error("asignar Email", e)
             raise
@@ -144,15 +146,19 @@ class Cliente:
     def verificar_credenciales(self, email_intento: str, pass_intento: str) -> bool:
         """verifica si el email y la contraseña coindiciden con las del cliente"""
 
-        #1. validamos el email(texto plano contra texto plano)
+        #1. validamos que la cuenta no este bloqueada
+        if self.estado_cliente_id == EstadoCliente.BLOQUEADO:
+            return False
+
+        #2. validamos el email(texto plano contra texto plano)
         if self.email != email_intento:
             return False
         
-        #2. se llama el metodo privado __encriptar_clave() para hashear esa contraseña
+        #3. se llama el metodo privado __encriptar_clave() para hashear esa contraseña
         # se convierte la contraseña que ingreso el usuario y la "sal" en un hash.
         hash_intento = self.__encriptar_clave(pass_intento, self._salt)
 
-        #3. comparamos los dos hashes.
+        #4. comparamos los dos hashes.
         if self._contraseña == hash_intento:
             #EXITO: se reinicia el contador de intentos para iniciar sesion
             self._intentos_login = 3
@@ -196,14 +202,14 @@ class Cliente:
 
         #se asigna directamente los valores a los atributos privados
         #saltandose los setters para no validar nada
-        cliente_existente._cliente_id = datos["cliente_id"]
+        cliente_existente.cliente_id = datos["cliente_id"]
         cliente_existente._email = datos["email"]
         cliente_existente._contraseña = datos["contraseña"] # <- aqui ya viene la contraseña hasheada
         cliente_existente._salt = datos["salt"]             # la "sal" guardada
         cliente_existente._rol_id = datos["rol_id"]
         cliente_existente._estado_cliente_id = datos["estado_cliente_id"]
         cliente_existente._tipo_cliente_id = datos["tipo_cliente_id"]
-        cliente_existente._fecha_registro = datos["fecha_registro"]
+        cliente_existente.__fecha_registro = datos["fecha_registro"]
         cliente_existente._intentos_login = 3
 
         return cliente_existente
