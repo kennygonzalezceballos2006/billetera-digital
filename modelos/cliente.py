@@ -17,14 +17,14 @@ class Cliente:
         inicializa un nuevo cliente, el id por defecto es None, si en caso tal no hay registro de el
         de mismo modo la fecha se asgina la actual, si esta registrado devuelve la original
         """
-        self.__cliente_id = cliente_id
+        self.cliente_id = cliente_id
 
         #Salt se inicializa vacio; el setter de contraseña lo generara
-        self.__salt = None
+        self._salt = None
 
         #generacion interna y automatica
         self.__fecha_registro =  datetime.now()
-        self.__intentos_login = 3
+        self._intentos_login = 3
 
         self.email = email
         self.contraseña = contraseña
@@ -34,7 +34,7 @@ class Cliente:
 
     @property
     def email(self):
-        return self.__email
+        return self._email
     
     @email.setter
     def email(self,nuevo_email):
@@ -42,14 +42,14 @@ class Cliente:
             if not isinstance(nuevo_email,str) or "@" not in nuevo_email:
                 raise ValueError("email no valido")
             
-            self.__email = nuevo_email
+            self._email = nuevo_email
         except Exception as e:
             caja_negra.registrar_error("asignar Email", e)
             raise
     
     @property
     def contraseña(self):
-        return self.__contraseña
+        return self._contraseña
     
     @staticmethod
     def __encriptar_clave(password_en_texto_plano: str, salt: str) -> str:
@@ -83,29 +83,25 @@ class Cliente:
 
             #--- 2. GESTION DEL SALT ---
             #si el atributo __salt es None (Usuario nuevo), generamos uno
-            if self.__salt is None:
-                self.__salt = secrets.token_hex(16)  #genera 32 caracteres aleatorios
+            if self._salt is None:
+                self._salt = secrets.token_hex(16)  #genera 32 caracteres aleatorios
 
             #--- 3. ENCRIPTACION ---
             #guardamos el hash resultante de la clave + la "sal" del cliente
-            self.__contraseña = self.__encriptar_clave(nueva_contraseña, self.__salt)
+            self._contraseña = self.__encriptar_clave(nueva_contraseña, self._salt)
         except Exception as e:
             caja_negra.registrar_error("cambio de contraseña / hashing", e)
             raise
 
     @property
     def rol_id(self):
-        return self.__rol_id
+        return self._rol_id
     
     @rol_id.setter
-    def rol_id(self, nuevo_rol):
+    def rol_id(self, rol):
         try:
-            #se extra el valor si nos pasan el enum completo
-            rol = nuevo_rol.value if isinstance(nuevo_rol, Roles) else nuevo_rol
-
-            #lista de valores validos (1, 2, 3)
-            if rol in [roles.value for roles in Roles]:
-                self.__rol_id = rol
+            if isinstance(rol, Roles):
+                self._rol_id = rol
             else:
                 raise ValueError(f"Rol {rol} no reconocido por el sistema.")
         except Exception as e:
@@ -114,17 +110,13 @@ class Cliente:
     
     @property
     def estado_cliente_id(self):
-        return self.__estado_cliente_id
+        return self._estado_cliente_id
     
     @estado_cliente_id.setter
-    def estado_cliente_id(self,nuevo_estado):
+    def estado_cliente_id(self,estado):
         try:
-            #se extra el valor si nos pasan el enum completo
-            estado = nuevo_estado.value if isinstance(nuevo_estado, EstadoCliente) else nuevo_estado
-
-            #lista de valores validos (1, 2, 3, 4)
-            if estado in [estados.value for estados in EstadoCliente]:
-                self.__estado_cliente_id = estado
+            if isinstance(estado, EstadoCliente):
+                self._estado_cliente_id = estado
             else:
                 raise ValueError(f'Estado {estado} no reconocido por el sistema.')
         except Exception as e:
@@ -133,17 +125,13 @@ class Cliente:
     
     @property
     def tipo_cliente_id(self):
-        return self.__tipo_cliente_id
+        return self._tipo_cliente_id
     
     @tipo_cliente_id.setter
-    def tipo_cliente_id(self, nuevo_tipo_cliente):
+    def tipo_cliente_id(self, tipo_cliente):
         try:
-            #se extra el valor si nos pasan el enum completo
-            tipo_cliente = nuevo_tipo_cliente.value if isinstance(nuevo_tipo_cliente, TipoCliente) else nuevo_tipo_cliente
-
-            #lista de valores validos (1, 2, 3)
-            if tipo_cliente in [tipos.value for tipos in TipoCliente]:
-                self.__tipo_cliente_id = tipo_cliente
+            if isinstance(tipo_cliente, TipoCliente):
+                self._tipo_cliente_id = tipo_cliente
             else:
                 raise ValueError(f'Tipo de cliente {tipo_cliente} no reconocido por el sistema.')
         except Exception as e:
@@ -151,7 +139,7 @@ class Cliente:
             raise  
 
     def __str__(self):
-        return f'Cliente(ID: {self.__cliente_id}, Email: {self.__email}, tipo de cliente: {self.__tipo_cliente_id})'
+        return f'Cliente(ID: {self.cliente_id}, Email: {self.email}, tipo de cliente: {self.tipo_cliente_id})'
 
     def verificar_credenciales(self, email_intento: str, pass_intento: str) -> bool:
         """verifica si el email y la contraseña coindiciden con las del cliente"""
@@ -162,39 +150,39 @@ class Cliente:
         
         #2. se llama el metodo privado __encriptar_clave() para hashear esa contraseña
         # se convierte la contraseña que ingreso el usuario y la "sal" en un hash.
-        hash_intento = self.__encriptar_clave(pass_intento, self.__salt)
+        hash_intento = self.__encriptar_clave(pass_intento, self._salt)
 
         #3. comparamos los dos hashes.
-        if self.__contraseña == hash_intento:
+        if self._contraseña == hash_intento:
             #EXITO: se reinicia el contador de intentos para iniciar sesion
-            self.__intentos_login = 3
+            self._intentos_login = 3
             return True
         else:
             #EROR: aqui se resta en 1 a los intentos para acceder a la cuenta(max 3 intentos)
-            self.__intentos_login -= 1
+            self._intentos_login -= 1
 
             #logica de bloqueo automatico
-            if self.__intentos_login <= 0:
-                self.estado_cliente_id = EstadoCliente.BLOQUEADO.value  #se usa el setter para bloquear
+            if self._intentos_login <= 0:
+                self.estado_cliente_id = EstadoCliente.BLOQUEADO  #se usa el setter para bloquear
                 caja_negra.registrar_error(f"Seguridad - Bloqueo automatico", f"{self.email} por exceso de intentos")
 
             return False
         
     def suspender(self):
         """cambia el estado a suspendido, lo registra en historial"""
-        self.estado_cliente_id = EstadoCliente.SUSPENDIDO.value
+        self.estado_cliente_id = EstadoCliente.SUSPENDIDO
 
     def bloquear(self):
         """cambia el estado a bloqueado, lo registra en historial"""
-        self.estado_cliente_id = EstadoCliente.BLOQUEADO.value
+        self.estado_cliente_id = EstadoCliente.BLOQUEADO
 
     def activar(self):
         """cambia el estado a activo, lo registra en historial"""
-        self.estado_cliente_id = EstadoCliente.ACTIVO.value
+        self.estado_cliente_id = EstadoCliente.ACTIVO
 
     def desactivar(self):
         """cambia el estado a inactivo, lo registra en historial"""
-        self.estado_cliente_id = EstadoCliente.INACTIVO.value
+        self.estado_cliente_id = EstadoCliente.INACTIVO
 
     @classmethod
     def cargar_cliente_db(cls, **datos):
@@ -208,14 +196,14 @@ class Cliente:
 
         #se asigna directamente los valores a los atributos privados
         #saltandose los setters para no validar nada
-        cliente_existente._Cliente__cliente_id = datos["cliente_id"]
-        cliente_existente._Cliente__email = datos["email"]
-        cliente_existente._Cliente__contraseña = datos["contraseña"] # <- aqui ya viene la contraseña hasheada
-        cliente_existente._Cliente__salt = datos["salt"]             # la "sal" guardada
-        cliente_existente._Cliente__rol_id = datos["rol_id"]
-        cliente_existente._Cliente__estado_cliente_id = datos["estado_cliente_id"]
-        cliente_existente._Cliente__tipo_cliente_id = datos["tipo_cliente_id"]
-        cliente_existente._Cliente__fecha_registro = datos["fecha_registro"]
-        cliente_existente._Cliente__intentos_login = 3
+        cliente_existente._cliente_id = datos["cliente_id"]
+        cliente_existente._email = datos["email"]
+        cliente_existente._contraseña = datos["contraseña"] # <- aqui ya viene la contraseña hasheada
+        cliente_existente._salt = datos["salt"]             # la "sal" guardada
+        cliente_existente._rol_id = datos["rol_id"]
+        cliente_existente._estado_cliente_id = datos["estado_cliente_id"]
+        cliente_existente._tipo_cliente_id = datos["tipo_cliente_id"]
+        cliente_existente._fecha_registro = datos["fecha_registro"]
+        cliente_existente._intentos_login = 3
 
         return cliente_existente

@@ -6,8 +6,20 @@ import re
 import json
 
 class PersonaNatural:
-    def __init__(self, nombres: str, apellidos: str, telefono: str, tipo_documento: int, documento_identificacion: str, fecha_nacimiento: str, fecha_expedicion: str, lugar_expedicion: str,  genero: int, genero_otro : str  = None, cliente_id: int = None):
-        self.__cliente_id = cliente_id
+    def __init__(self,
+                nombres: str,
+                apellidos: str,
+                telefono: str,
+                tipo_documento: int,
+                documento_identificacion: str,
+                fecha_nacimiento: str,
+                fecha_expedicion: str,
+                lugar_expedicion: str,
+                genero: int,
+                cliente_id: int = None
+            ):
+        
+        self.cliente_id = cliente_id
         self.nombres = nombres
         self.apellidos = apellidos
         self.telefono = telefono
@@ -17,7 +29,6 @@ class PersonaNatural:
         self.fecha_nacimiento = fecha_nacimiento
         self.fecha_expedicion = fecha_expedicion
         self.genero = genero
-        self.genero_otro = genero_otro # solo se llena si genero == 3
     
     #Getters para acceder mediante un metodo que actua como atributo
     #lee el valor del atributo y lo retorna
@@ -61,12 +72,17 @@ class PersonaNatural:
     def genero(self):
         return self._genero
     
-    @property
-    def genero_otro(self):
-        return self._genero_otro
-    
     #Setters para acceder y modificar el valor de un atributo privado mediante una logica de validacion
     #actua tanto para modificar como para insertar un valor a un atributo de una nueva instancia(PeronaNatural)
+    @cliente_id.setter
+    def cliente_id(self, cliente_id):
+        try:
+            if getattr(self, '_cliente_id', None) is not None:
+                raise ValueError("el id de este cliente ya fue registrado y no puede ser modificado")
+            self._cliente_id = cliente_id
+        except Exception as e:
+            raise
+
     @nombres.setter
     def nombres(self, nombres):
         #limpiamos la cadena de texto y colocamos en mayuscula la primera palabra de cada nombre
@@ -100,40 +116,45 @@ class PersonaNatural:
     @telefono.setter
     def telefono(self, telefono):
         try:
-            if not re.match(r'^3\d{9}$', telefono):
+            #limpiamos la cadena de texto para sanitizar la entrada
+            telefono_limpio = telefono.strip()
+
+            #verificamos que el telefono comience con 3 y tenga exactamente 10 digitos
+            if not re.match(r'^3\d{9}$', telefono_limpio):
                 raise ValueError('numero de telefono invalido')
             
-            self._telefono = telefono
+            self._telefono = telefono_limpio
         except Exception as e:
             raise
 
     @tipo_documento.setter
     def tipo_documento(self, tipo_documento):
         try:
-            documento = tipo_documento.value if isinstance(tipo_documento, TipoDocumento) else tipo_documento
-
-            if documento in [tipo.value for tipo in TipoDocumento]:
-                self._tipo_documento = documento
+            if isinstance(tipo_documento, TipoDocumento):
+                self._tipo_documento = tipo_documento
             else:
-                raise ValueError(f"el documento ({documento}) no es reconocido por el sistema")
+                raise ValueError(f"el documento ({tipo_documento}) no es reconocido por el sistema")
         except Exception as e:
             raise
     
     @documento_identificacion.setter
     def documento_identificacion(self, documento_identificacion):
-        # mini diccionario para validar el formato del documento
-        patrones = {
-            1: r'^\d{6,10}$',         #cedula
-            2: r'^\d{10,11}$',        # tarjeta de identidad
-            3: r'^[a-zA-Z0-9]{5,9}$'  # pasaporte
-        }
-        # se obtiene el tipo de documento y lo busca en el mini diccionario
-        patron = patrones.get(self._tipo_documento)
-
         try:
+            #limpiamos la cadena de texto y sanitizamos la entrada
             documento_limpio = documento_identificacion.strip()
-            if not re.match(patron, documento_limpio):
-                raise ValueError(f'formato de documento no valido para el tipo ({self._tipo_documento})')
+
+            #verificamos que el documento limpio no este vacio
+            if not documento_limpio:
+                raise ValueError("el documento no puede estar vacio")
+            
+            #verificamos que el documento no exceda el limite real
+            if len(documento_limpio) > 15:
+                raise ValueError("Documento no valido")
+            
+            #verficamos que el documento cumpla con el formato de su documento
+            #mediante la libreria estandar re hacemos una compararcion para saber si cumple o no
+            if not re.match(self._tipo_documento.patron, documento_limpio):
+                raise ValueError(f'documento no valido')
             
             self._documento_identificacion = documento_limpio
         except Exception as e:
@@ -198,25 +219,10 @@ class PersonaNatural:
     @genero.setter
     def genero(self, genero):
         try:
-            genero_valido = genero.value if isinstance(genero, Genero) else genero
-
-            if genero_valido in [valido.value for valido in Genero]:
-                self._genero = genero_valido
+            if isinstance(genero, Genero):
+                self._genero = genero
             else:
                 raise ValueError('Genero no valido')
-        except Exception as e:
-            raise
-    
-    @genero_otro.setter
-    def genero_otro(self, genero_otro):
-        try:
-            if self.genero == Genero.OTRO.value:
-                if not genero_otro or len(genero_otro.strip()) < 3:
-                    raise ValueError("Debe especificar una descripcion para el genero 'Otro'")
-                self._genero_otro = genero_otro.strip().title()
-            else:
-                #si no es 'Otro' limpiamos cualquier texto que haya llegado
-                self._genero_otro = None
         except Exception as e:
             raise
     
@@ -230,13 +236,13 @@ class PersonaNatural:
             "fecha_nacimiento": self.fecha_nacimiento,
             "lugar_expedicion": self.lugar_expedicion,
             "fecha_expedicion": self.fecha_expedicion,
-            "genero": self.genero,
-            "genero_otro": self.genero_otro
+            "genero": self.genero
         }
         return json.dumps(datos, indent=4, ensure_ascii= False)
 
     def to_dict(self):
         return {
+            "cliente_id": self._cliente_id,
             "nombres": self.nombres,
             "apellidos": self.apellidos,
             "telefono": self.telefono,
@@ -246,7 +252,6 @@ class PersonaNatural:
             "lugar_expedicion": self.lugar_expedicion,
             "fecha_expedicion": self.fecha_expedicion,
             "genero": self.genero,
-            "genero_otro": self.genero_otro
         }
     
     @classmethod
@@ -263,4 +268,5 @@ class PersonaNatural:
         persona_existente._lugar_expedicion = persona["lugar_expedicion"]
         persona_existente._fecha_expedicion = persona["fecha_expedicion"]
         persona_existente._genero = persona["genero"]
-        persona_existente._genero_otro = persona["genero_otro"]
+
+        return persona_existente
