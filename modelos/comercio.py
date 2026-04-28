@@ -1,6 +1,7 @@
 from catalogos.tipo_documento import TipoDocumento
 from catalogos.generos import Genero
-from utils.divipola import es_codigo_valido
+from catalogos.tipos_comercios import TipoComercio
+from utils.divipola import es_codigo_valido, obtener_departamento_y_municipio
 from datetime import datetime
 import json
 import re
@@ -169,6 +170,11 @@ class Comercio:
         try:
             if isinstance(tipo_documento, TipoDocumento):
                 self._tipo_documento = tipo_documento
+            elif isinstance(tipo_documento, int):
+                resultado = next((documento for documento in TipoDocumento if documento.id == tipo_documento), None)
+                self._tipo_documento = resultado
+                if resultado is None:
+                    raise ValueError("documento no reconocido por el sistema")
             else:
                 raise ValueError(f"el documento ({tipo_documento}) no es reconocido por el sistema")
         except Exception as e:
@@ -266,19 +272,35 @@ class Comercio:
                 raise ValueError('Genero no valido')
         except Exception as e:
             raise
+
+    @tipo_comercio.setter
+    def tipo_comercio(self, comercio):
+        try:
+            if isinstance(comercio, TipoComercio):
+                self._tipo_comercio = comercio
+            elif isinstance(comercio, int):
+                resultado = next((tipo for tipo in TipoComercio if tipo.value == comercio), None)
+                self._tipo_comercio = resultado
+                if resultado is None:
+                    raise ValueError("tipo de comercio no reconocido por el sistema.")
+            else:
+                raise ValueError("tipo de comercio no reconocido por el sistema.")
+        except Exception as e:
+            raise
     
     def __str__(self):
         datos = {
             "nombre_establecimiento": self.nombre_establecimiento,
             "direccion": self.direccion,
             "telefono": self.telefono,
-            "tipo_documento": self.tipo_documento,
-            "documento_persona": self.documento_persona,
-            "lugar_expedicion": self.lugar_expedicion,
+            "tipo_documento": self.tipo_documento.name.replace("_", " "),
+            "documento_persona": f"{int(self.documento_persona):,}".replace(",", "." \
+            ""),
+            "lugar_expedicion": obtener_departamento_y_municipio(self.lugar_expedicion),
             "fecha_nacimiento": self.fecha_nacimiento,
             "fecha_expedicion": self.fecha_expedicion,
-            "genero": self.genero,
-            "tipo_comercio": self.tipo_comercio
+            "genero": self.genero.name,
+            "tipo_comercio": self.tipo_comercio.name,
         }
         return json.dumps(datos, indent=4, ensure_ascii= False)
     
@@ -314,3 +336,18 @@ class Comercio:
         comercio_existente._tipo_comercio = comercio["tipo_comercio"]
 
         return comercio_existente
+    
+if __name__ == "__main__":
+    comercio = Comercio(
+        nombre_establecimiento="Tienda Donde Juancho",
+        direccion="Calle 15 #23-45 Barrio Centro",
+        telefono="3016763302",
+        tipo_documento=TipoDocumento.CEDULA_CIUDADANIA,
+        documento_persona="1119393187",
+        lugar_expedicion="44001",
+        fecha_nacimiento="1990-05-15",
+        fecha_expedicion="2010-03-20",
+        genero=Genero.MASCULINO,
+        tipo_comercio=TipoComercio.FARMACIA
+    )
+    print(comercio)

@@ -1,6 +1,6 @@
 from catalogos.tipo_documento import TipoDocumento
 from catalogos.generos import Genero
-from utils.divipola import es_codigo_valido
+from utils.divipola import es_codigo_valido, obtener_departamento_y_municipio
 from datetime import datetime
 import re
 import json
@@ -14,7 +14,7 @@ class PersonaNatural:
                 documento_identificacion: str,
                 fecha_nacimiento: str,
                 fecha_expedicion: str,
-                lugar_expedicion: str,
+                lugar_expedicion: int,
                 genero: int,
                 cliente_id: int = None
             ):
@@ -128,12 +128,17 @@ class PersonaNatural:
             raise
 
     @tipo_documento.setter
-    def tipo_documento(self, tipo_documento):
+    def tipo_documento(self, tipo_documento: int):
         try:
             if isinstance(tipo_documento, TipoDocumento):
                 self._tipo_documento = tipo_documento
+            elif isinstance(tipo_documento, int):
+                resultado = next((t for t in TipoDocumento if t.id == tipo_documento), None)
+                if resultado is None:
+                    raise ValueError("Tipo de documento no reconocido")
+                self._tipo_documento = resultado
             else:
-                raise ValueError(f"el documento ({tipo_documento}) no es reconocido por el sistema")
+                raise ValueError(f"tipo de documento no reconocido por el sistema")
         except Exception as e:
             raise
     
@@ -163,11 +168,12 @@ class PersonaNatural:
     @lugar_expedicion.setter
     def lugar_expedicion(self, codigo_municipio):
         try:
+            codigo_str = str(codigo_municipio).strip()
             #el frontend envio el codigo final tras elegir el Dpto y luego el municipio
-            if es_codigo_valido(codigo_municipio):
-                self._lugar_expedicion = codigo_municipio
+            if es_codigo_valido(codigo_str):
+                self._lugar_expedicion = codigo_str
             else:
-                raise ValueError(f'el codigo DIVIPOLA {codigo_municipio} invalido.')
+                raise ValueError(f'municipio no reconocido por el sistema.')
         except Exception as e:
             raise
     
@@ -221,6 +227,11 @@ class PersonaNatural:
         try:
             if isinstance(genero, Genero):
                 self._genero = genero
+            elif isinstance(genero, int):
+                resultado = next((generos for generos in Genero if generos.value == genero), None)
+                self._genero = resultado
+                if resultado is None:
+                    raise ValueError("genero no valido")
             else:
                 raise ValueError('Genero no valido')
         except Exception as e:
@@ -231,14 +242,14 @@ class PersonaNatural:
             "nombres": self.nombres,
             "apellidos": self.apellidos,
             "telefono": self.telefono,
-            "tipo_documento": self.tipo_documento,
-            "documento_identificacion": self.documento_identificacion,
+            "tipo_documento": self.tipo_documento.name.replace("_", " "),
+            "documento_identificacion": f"{int(self.documento_identificacion):,}".replace(",","."),
             "fecha_nacimiento": self.fecha_nacimiento,
-            "lugar_expedicion": self.lugar_expedicion,
+            "lugar_expedicion": obtener_departamento_y_municipio(self.lugar_expedicion),
             "fecha_expedicion": self.fecha_expedicion,
-            "genero": self.genero
+            "genero": self.genero.name.replace("_", " "),
         }
-        return json.dumps(datos, indent=4, ensure_ascii= False)
+        return json.dumps(datos, indent=10, ensure_ascii= False)
 
     def to_dict(self):
         return {
@@ -246,12 +257,12 @@ class PersonaNatural:
             "nombres": self.nombres,
             "apellidos": self.apellidos,
             "telefono": self.telefono,
-            "tipo_documento": self.tipo_documento,
+            "tipo_documento": self.tipo_documento.name,
             "documento_identificacion": self.documento_identificacion,
             "fecha_nacimiento": self.fecha_nacimiento,
-            "lugar_expedicion": self.lugar_expedicion,
+            "lugar_expedicion": obtener_departamento_y_municipio(self.lugar_expedicion),
             "fecha_expedicion": self.fecha_expedicion,
-            "genero": self.genero,
+            "genero": self.genero.name,
         }
     
     @classmethod
@@ -270,3 +281,16 @@ class PersonaNatural:
         persona_existente._genero = persona["genero"]
 
         return persona_existente
+
+if __name__ == "__main__":
+    persona_natural = PersonaNatural(
+        "kenny gabriel",
+        "gonzalez ceballos",
+        "3016763302", 1,
+        "1119393187",
+        "2006-12-27",
+        "2025-02-13",
+        "44001",
+        1 
+        )
+    print(persona_natural)

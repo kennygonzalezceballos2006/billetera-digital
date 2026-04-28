@@ -1310,12 +1310,13 @@ def es_codigo_valido(codigo: str) -> bool:
     return codigo in CODIGOS_MUNICIPIOS
  
  
-def obtener_nombre(codigo: str) -> str | None:
-    """Retorna el nombre del municipio dado su código, o None si no existe."""
+def obtener_departamento_y_municipio(codigo: str) -> str | None:
     cod_dpto = codigo[:2]
     depto = DIVIPOLA.get(cod_dpto)
     if depto:
-        return depto["municipios"].get(codigo)
+        departamento = depto["nombre"]
+        municipio = depto["municipios"].get(codigo)
+        return f"{departamento}-{municipio}"
     return None
  
  

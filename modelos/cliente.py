@@ -1,18 +1,26 @@
 from datetime import datetime
-from .catalogos.estado_cliente import EstadoCliente
-from .catalogos.roles import Roles
-from .catalogos.tipo_cliente import TipoCliente
-from .auditoria_sistema import caja_negra
+from catalogos.estado_cliente import EstadoCliente
+from catalogos.roles import Roles
+from catalogos.tipo_cliente import TipoCliente
+from auditoria_sistema import caja_negra
 import re
 import hashlib
 import secrets
+import json
 
 class Cliente:
     """
     Representa un usuario dentro del sistema financiero.
     Gestiona validaciones de seguridad y estados de cuenta.
     """
-    def __init__(self, email: str, contraseña: str, rol_id: int, estado_cliente_id: int, tipo_cliente_id: int, cliente_id: int = None):
+    def __init__(self,
+                email: str,
+                contraseña: str,
+                rol_id: int,
+                estado_cliente_id: int,
+                tipo_cliente_id: int,
+                cliente_id: int = None
+            ):
         """
         inicializa un nuevo cliente, el id por defecto es None, si en caso tal no hay registro de el
         de mismo modo la fecha se asgina la actual, si esta registrado devuelve la original
@@ -140,9 +148,6 @@ class Cliente:
             caja_negra.registrar_error("asignar tipo de cliente", e)
             raise  
 
-    def __str__(self):
-        return f'Cliente(ID: {self.cliente_id}, Email: {self.email}, tipo de cliente: {self.tipo_cliente_id})'
-
     def verificar_credenciales(self, email_intento: str, pass_intento: str) -> bool:
         """verifica si el email y la contraseña coindiciden con las del cliente"""
 
@@ -190,6 +195,28 @@ class Cliente:
         """cambia el estado a inactivo, lo registra en historial"""
         self.estado_cliente_id = EstadoCliente.INACTIVO
 
+    def __str__(self):
+        datos = {
+            "email": self.email,
+            "contraseña": self.contraseña,
+            "salt": self._salt,
+            "cliente_id": self.cliente_id,
+            "tipo_de_cliente": self.tipo_cliente_id.name.replace("_", " "),
+            "estado_cliente": self.estado_cliente_id.name,
+            "rol_cliente": self.rol_id.name,
+        }
+        return json.dumps(datos, indent=4, ensure_ascii= False)
+    
+    def to_dict(self):
+        return {
+            "cliente_id": self.cliente_id,
+            "email": self.email,
+            "salt": self._salt,
+            "tipo_cliente": self.tipo_cliente_id.name,
+            "estado_cliente": self.estado_cliente_id.name,
+            "rol_cliente": self.rol_id.name,
+        }
+    
     @classmethod
     def cargar_cliente_db(cls, **datos):
         """
@@ -213,3 +240,7 @@ class Cliente:
         cliente_existente._intentos_login = 3
 
         return cliente_existente
+    
+if __name__ == "__main__":
+    cliente = Cliente("kennyceballos2@gmail.com", "GGk200627.@()", Roles.CLIENTE, EstadoCliente.ACTIVO, TipoCliente.PERSONA_NATURAL)
+    print(cliente)
