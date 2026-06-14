@@ -35,7 +35,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     # Apps del proyecto
-    'catalogos',
+    'core',
     'usuarios',
     'autenticacion',
     'cuentas',
