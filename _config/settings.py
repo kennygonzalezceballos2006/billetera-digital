@@ -91,6 +91,11 @@ DATABASES = {
     }
 }
 
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.Argon2PasswordHasher',  # primero = default
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',  # fallback
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+]
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
