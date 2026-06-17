@@ -280,32 +280,27 @@
 
         <div class="forgot"><a href="#">¿Olvidaste tu contraseña?</a></div>
 
-        <form method="post">
-            {% csrf_token %} <input type="text" name="username" placeholder="Usuario">
-            <input type="password" name="password" placeholder="Contraseña">
 
-            <button class="btn-primary" type="submit">Iniciar sesión</button>
-        </form>
+        <button class="btn-primary" type="submit">Iniciar sesión</button>
 
         <div class="divider">o continúa con</div>
         <button class="btn-google" type="button">Continuar con Google</button>
-    </form>
 
-    <p class="footer">¿No tienes una cuenta? <a href="#">Regístrate</a></p>
+        <p class="footer">¿No tienes una cuenta? <a href="#">Regístrate</a></p>
 
-    <script>
-        // Solo dejamos la lógica de visibilidad de contraseña
-        const toggleBtn = document.getElementById('toggle-pw');
-        const pwInput = document.getElementById('password');
-        const eyeIcon = document.getElementById('eye-icon');
-        let pwVisible = false;
+        <script>
+            // Solo dejamos la lógica de visibilidad de contraseña
+            const toggleBtn = document.getElementById('toggle-pw');
+            const pwInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eye-icon');
+            let pwVisible = false;
 
-        toggleBtn.addEventListener('click', () => {
-            pwVisible = !pwVisible;
-            pwInput.type = pwVisible ? 'text' : 'password';
-            eyeIcon.className = pwVisible ? 'ti ti-eye-off' : 'ti ti-eye';
-        });
-    </script>
+            toggleBtn.addEventListener('click', () => {
+                pwVisible = !pwVisible;
+                pwInput.type = pwVisible ? 'text' : 'password';
+                eyeIcon.className = pwVisible ? 'ti ti-eye-off' : 'ti ti-eye';
+            });
+        </script>
 </body>
 
 </html>

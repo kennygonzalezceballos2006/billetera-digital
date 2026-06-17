@@ -100,19 +100,24 @@
                 <div class="section-header">
                     <h2 class="section-title">Últimos movimientos</h2>
                 </div>
-                <div class="movements-list" id="transfersList">
+                <div class="movements-list">
                     {% for item in historial %}
-                    <div class="movement-item transfer-row">
-                        <div class="movement-info"><span>{{ item.fecha }}</span></div>
-                        <div class="movement-info"><span>{{ item.tipo }}</span></div>
-                        <div class="movement-info"><span>{{ item.contacto }}</span></div>
-                        <div class="movement-amount text-right">
-                            <span class="amount-value {% if item.es_positivo %}positive{% endif %}">{{ item.monto
-                                }}</span>
-                        </div>
-                        <div class="movement-amount text-right">
-                            <span class="status-pill {{ item.estado_clase }}">{{ item.estado }}</span>
-                        </div>
+                    <div class="movement-item">
+                        <span>{{ item.fecha_hora|date:"d/m/Y" }}</span>
+
+                        <span>
+                            {% if item.cuenta_origen == cuenta %}
+                            Envío a: {{ item.cuenta_destino.numero_cuenta }}
+                            {% else %}
+                            Recibido de: {{ item.cuenta_origen.numero_cuenta }}
+                            {% endif %}
+                        </span>
+
+                        <span
+                            class="amount-value {% if item.cuenta_destino == cuenta %}positive{% else %}negative{% endif %}">
+                            {% if item.cuenta_destino == cuenta %}+{% else %}-{% endif %}
+                            ${{ item.monto_total|floatformat:2 }}
+                        </span>
                     </div>
                     {% endfor %}
                 </div>

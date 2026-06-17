@@ -109,7 +109,6 @@ def transferir_a_bolsillo(cuenta, bolsillo, monto):
     return transaccion
 
 def get_historial(cuenta):
-    # CORRECCIÓN: Filtra origen OR destino para ver movimientos completos
     return Transacciones.objects.filter(
         Q(cuenta_origen=cuenta) | Q(cuenta_destino=cuenta)
-    ).order_by('-fecha_hora')[:10]
+    ).distinct().order_by('-fecha_hora')[:20]

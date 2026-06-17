@@ -271,6 +271,5 @@ def procesar_dinero_bolsillo(request):
     return redirect('cuentas:bolsillos')
 
 def historial_view(request):
-    # Esto es temporal para que el servidor arranque. 
-    # Luego aquí pondrás la lógica de tu historial.
+
     return render(request, 'historial.html', {})
