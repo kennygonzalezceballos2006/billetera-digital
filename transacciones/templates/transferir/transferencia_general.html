@@ -1,4 +1,6 @@
 {% load static %}
+{% load humanize %}
+{% load l10n %}
 <!DOCTYPE html>
 <html lang="es">
 
@@ -15,24 +17,54 @@
         <aside class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"></rect>
+                        <path d="M3 9h18" stroke-width="2"></path>
+                        <path d="M9 3v18" stroke-width="2"></path>
+                    </svg>
                     <span class="logo-text">SmartWallet</span>
                 </div>
             </div>
 
             <nav class="sidebar-nav">
-                <a href="{% url 'cuentas:dashboard' %}" class="nav-item"><span>Inicio</span></a>
-                <a href="{% url 'cuentas:cuentas' %}" class="nav-item"><span>Cuentas</span></a>
-                <a href="{% url 'cuentas:bolsillos' %}" class="nav-item"><span>Bolsillos</span></a>
-                <a href="{% url 'transferir' %}" class="nav-item active"><span>Transferencias</span></a>
-                <a href="{% url 'cuentas:historial' %}" class="nav-item"><span>Historial</span></a>
+                <a href="{% url 'cuentas:dashboard' %}" class="nav-item">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path>
+                    </svg>
+                    <span>Inicio</span>
+                </a>
+                <a href="{% url 'cuentas:bolsillos' %}" class="nav-item">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-0.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l0.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-0.9-2-2-2z">
+                        </path>
+                    </svg>
+                    <span>Bolsillos</span>
+                </a>
+                <a href="{% url 'transferir' %}" class="nav-item active">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z">
+                        </path>
+                    </svg>
+                    <span>Transferencias</span>
+                </a>
             </nav>
 
-            <div class="user-profile">
-                <div class="user-avatar">{{ user.iniciales }}</div>
+            <div class="user-profile" style="margin-top: auto; padding: 20px;">
+                <div class="user-avatar">{{ email|slice:":2"|upper }}</div>
                 <div class="user-info">
-                    <span class="user-name">{{ user.username }}</span>
+                    <span class="user-name">{{ email }}</span>
                 </div>
             </div>
+
+            <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="settings-link"
+                    style="background: none; border: none; cursor: pointer; color: inherit; font: inherit; display: flex; align-items: center; gap: 10px;">
+                    <span>Cerrar sesión</span>
+                </button>
+            </form>
         </aside>
 
         <main class="main-content">
@@ -68,32 +100,20 @@
                 <div class="section-header">
                     <h2 class="section-title">Últimos movimientos</h2>
                 </div>
-
                 <div class="movements-list" id="transfersList">
                     {% for item in historial %}
                     <div class="movement-item transfer-row">
-                        <div class="movement-info">
-                            <span class="movement-title">{{ item.fecha }}</span>
-                        </div>
-                        <div class="movement-info">
-                            <span class="movement-title">{{ item.tipo }}</span>
-                        </div>
-                        <div class="movement-info">
-                            <span class="movement-title">{{ item.contacto }}</span>
+                        <div class="movement-info"><span>{{ item.fecha }}</span></div>
+                        <div class="movement-info"><span>{{ item.tipo }}</span></div>
+                        <div class="movement-info"><span>{{ item.contacto }}</span></div>
+                        <div class="movement-amount text-right">
+                            <span class="amount-value {% if item.es_positivo %}positive{% endif %}">{{ item.monto
+                                }}</span>
                         </div>
                         <div class="movement-amount text-right">
-                            <span class="amount-value {% if item.es_positivo %}positive{% endif %}">
-                                {{ item.monto }}
-                            </span>
-                        </div>
-                        <div class="movement-amount text-right">
-                            <span class="status-pill {{ item.estado_clase }}">
-                                {{ item.estado }}
-                            </span>
+                            <span class="status-pill {{ item.estado_clase }}">{{ item.estado }}</span>
                         </div>
                     </div>
-                    {% empty %}
-                    <p>No tienes movimientos recientes.</p>
                     {% endfor %}
                 </div>
             </section>
@@ -106,16 +126,13 @@
             <h2>Nueva Transferencia</h2>
             <form id="transferForm" method="POST" action="{% url 'procesar_transferencia' %}">
                 {% csrf_token %}
-                <input type="hidden" name="cuenta_id" value="{{ cuenta.id }}">
-                
                 <div class="form-group">
                     <p><strong>Desde cuenta:</strong> {{ cuenta.numero_oculto }}</p>
-                    <p><strong>Disponible:</strong> ${{ cuenta.saldo_disponible }}</p>
+                    <p><strong>Disponible:</strong> ${{ cuenta.saldo_disponible|floatformat:2|intcomma }}</p>
                 </div>
-
                 <div class="form-group">
-                    <label>Destinatario</label>
-                    <input type="text" name="destinatario" placeholder="Nombre o número de cuenta" required>
+                    <label>Destinatario (Número de cuenta)</label>
+                    <input type="text" name="destinatario" placeholder="Ingrese número de cuenta" required>
                 </div>
                 <div class="form-group">
                     <label>Monto</label>
@@ -128,4 +145,5 @@
 
     <script src="{% static 'transferir/script_transferencias.js' %}"></script>
 </body>
+
 </html>
