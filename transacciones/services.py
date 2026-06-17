@@ -1,5 +1,6 @@
 from django.utils import timezone
 from django.db import transaction
+from django.db.models import Q
 import uuid
 from core.models import Catalogos
 from cuentas.models import Cuentas, Bolsillos
@@ -32,15 +33,12 @@ def aplica_gmf(cuenta, monto, limite):
 def transferir(cuenta_origen, cuenta_destino, monto, tipo_transaccion_nombre, usuario):
     limite = get_limite(usuario.tipo_cliente, tipo_transaccion_nombre)
 
-    # Verificar saldo suficiente
     if cuenta_origen.saldo_disponible < monto:
         raise ValueError('Saldo insuficiente.')
 
-    # Calcular GMF
     gmf = calcular_gmf(monto, limite) if aplica_gmf(cuenta_origen, monto, limite) else 0
     monto_total = monto + gmf
 
-    # Verificar saldo suficiente con GMF
     if cuenta_origen.saldo_disponible < monto_total:
         raise ValueError('Saldo insuficiente para cubrir el GMF.')
 
@@ -53,7 +51,6 @@ def transferir(cuenta_origen, cuenta_destino, monto, tipo_transaccion_nombre, us
         categoria__categoria_nombre='estado_transaccion'
     )
 
-    # Crear transacción
     transaccion = Transacciones.objects.create(
         idempotency_key=str(uuid.uuid4()),
         monto=monto,
@@ -66,7 +63,6 @@ def transferir(cuenta_origen, cuenta_destino, monto, tipo_transaccion_nombre, us
         estado_transaccion=estado_exitosa
     )
 
-    # Actualizar saldos
     cuenta_origen.saldo_disponible -= monto_total
     cuenta_origen.movimientos_mes_actual += monto
     cuenta_origen.save()
@@ -113,6 +109,7 @@ def transferir_a_bolsillo(cuenta, bolsillo, monto):
     return transaccion
 
 def get_historial(cuenta):
+    # CORRECCIÓN: Filtra origen OR destino para ver movimientos completos
     return Transacciones.objects.filter(
-        cuenta_origen=cuenta
+        Q(cuenta_origen=cuenta) | Q(cuenta_destino=cuenta)
     ).order_by('-fecha_hora')[:10]

@@ -1,0 +1,131 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartWallet - Transferencias</title>
+    <link rel="stylesheet" href="{% static 'cuentas/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'transferir/transacciones_general.css' %}">
+</head>
+
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-text">SmartWallet</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="{% url 'cuentas:dashboard' %}" class="nav-item"><span>Inicio</span></a>
+                <a href="{% url 'cuentas:cuentas' %}" class="nav-item"><span>Cuentas</span></a>
+                <a href="{% url 'cuentas:bolsillos' %}" class="nav-item"><span>Bolsillos</span></a>
+                <a href="{% url 'transferir' %}" class="nav-item active"><span>Transferencias</span></a>
+                <a href="{% url 'cuentas:historial' %}" class="nav-item"><span>Historial</span></a>
+            </nav>
+
+            <div class="user-profile">
+                <div class="user-avatar">{{ user.iniciales }}</div>
+                <div class="user-info">
+                    <span class="user-name">{{ user.username }}</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="alert {{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="top-header">
+                <div class="greeting">
+                    <h1>Transferencias</h1>
+                    <p>Envía dinero de forma rápida y segura</p>
+                </div>
+                <div class="header-actions">
+                    <button class="add-btn" id="openModal">+ Nueva transferencia</button>
+                </div>
+            </div>
+
+            <section class="summary-cards">
+                {% for card in tarjetas %}
+                <div class="card">
+                    <span class="card-title">{{ card.titulo }}</span>
+                    <div class="card-amount">{{ card.monto }}</div>
+                    <div class="card-description">{{ card.cantidad }} movimientos</div>
+                </div>
+                {% endfor %}
+            </section>
+
+            <section class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Últimos movimientos</h2>
+                </div>
+
+                <div class="movements-list" id="transfersList">
+                    {% for item in historial %}
+                    <div class="movement-item transfer-row">
+                        <div class="movement-info">
+                            <span class="movement-title">{{ item.fecha }}</span>
+                        </div>
+                        <div class="movement-info">
+                            <span class="movement-title">{{ item.tipo }}</span>
+                        </div>
+                        <div class="movement-info">
+                            <span class="movement-title">{{ item.contacto }}</span>
+                        </div>
+                        <div class="movement-amount text-right">
+                            <span class="amount-value {% if item.es_positivo %}positive{% endif %}">
+                                {{ item.monto }}
+                            </span>
+                        </div>
+                        <div class="movement-amount text-right">
+                            <span class="status-pill {{ item.estado_clase }}">
+                                {{ item.estado }}
+                            </span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p>No tienes movimientos recientes.</p>
+                    {% endfor %}
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="transferModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>Nueva Transferencia</h2>
+            <form id="transferForm" method="POST" action="{% url 'procesar_transferencia' %}">
+                {% csrf_token %}
+                <input type="hidden" name="cuenta_id" value="{{ cuenta.id }}">
+                
+                <div class="form-group">
+                    <p><strong>Desde cuenta:</strong> {{ cuenta.numero_oculto }}</p>
+                    <p><strong>Disponible:</strong> ${{ cuenta.saldo_disponible }}</p>
+                </div>
+
+                <div class="form-group">
+                    <label>Destinatario</label>
+                    <input type="text" name="destinatario" placeholder="Nombre o número de cuenta" required>
+                </div>
+                <div class="form-group">
+                    <label>Monto</label>
+                    <input type="number" name="monto" step="0.01" min="0.01" placeholder="$0.00" required>
+                </div>
+                <button type="submit" class="add-btn">Confirmar transferencia</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="{% static 'transferir/script_transferencias.js' %}"></script>
+</body>
+</html>
