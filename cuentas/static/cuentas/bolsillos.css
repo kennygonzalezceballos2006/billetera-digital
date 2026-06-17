@@ -322,3 +322,42 @@
 }
 
 .pocket-delete-btn:hover { background: #fff0f0; }
+
+/* Contenedor que alinea los botones en fila */
+.modal-actions {
+    display: flex;
+    justify-content: flex-end; /* Alinea los botones a la derecha */
+    gap: 10px;               /* Espacio entre los dos botones */
+    margin-top: 20px;        /* Espacio superior respecto al input */
+}
+
+/* Estilo común para ambos botones */
+.modal-actions button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+/* Botón Confirmar (Acción principal) */
+.modal-actions button[type="submit"] {
+    background-color: #2563eb;
+    color: white;
+}
+
+.modal-actions button[type="submit"]:hover {
+    background-color: #1d4ed8;
+}
+
+/* Botón Cancelar (Acción secundaria) */
+.modal-actions button[type="button"] {
+    background-color: #f3f4f6;
+    color: #4b5563;
+}
+
+.modal-actions button[type="button"]:hover {
+    background-color: #e5e7eb;
+}

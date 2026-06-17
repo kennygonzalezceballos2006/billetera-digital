@@ -18,7 +18,7 @@ def login_view(request):
         request.session['email'] = usuario.email
         request.session['tipo_cliente'] = usuario.tipo_cliente.catalogo_nombre
 
-        return redirect('dashboard')
+        return redirect('cuentas:dashboard')
 
     return render(request, 'login/login.html')
 

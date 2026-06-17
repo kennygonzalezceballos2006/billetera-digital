@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 {% load static %}
+{% load humanize %}
+{% load l10n %}
 <html lang="es">
 
 <head>
@@ -36,7 +38,7 @@
                     </svg>
                     <span>Cuentas</span>
                 </a>
-                <a href="{% url 'bolsillos' %}" class="nav-item">
+                <a href="{% url 'cuentas:bolsillos' %}" class="nav-item">
                     <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
                         <path
                             d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-0.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l0.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-0.9-2-2-2z">
@@ -91,22 +93,21 @@
                         </path>
                     </svg>
                     {% if no_leidas > 0 %}<span class="notification-badge">{{ no_leidas }}</span>{% endif %}
-                    <button class="add-btn">+ Agregar</button>
                 </div>
             </div>
 
             <section class="summary-cards">
                 <div class="card card-available">
                     <span class="card-title">Disponible para gastar</span>
-                    <div class="card-amount">${{ cuenta.saldo_disponible|floatformat:"0" }}</div>
+                    <div class="card-amount">${{ cuenta.saldo_disponible|floatformat:2|intcomma }}</div>
                 </div>
                 <div class="card card-total">
                     <span class="card-title">Saldo total</span>
-                    <div class="card-amount">${{ saldo_total|floatformat:"0" }}</div>
+                    <div class="card-amount">${{ saldo_total|floatformat:2|intcomma }}</div>
                 </div>
                 <div class="card card-pockets">
                     <span class="card-title">En bolsillos</span>
-                    <div class="card-amount">${{ cuenta.saldo_bolsillos|floatformat:"0" }}</div>
+                    <div class="card-amount">${{ cuenta.saldo_bolsillos|floatformat:2|intcomma}}</div>
                 </div>
             </section>
 
@@ -121,7 +122,7 @@
                         </div>
                         <div class="card-balance-info">
                             <span class="card-label">Disponible</span>
-                            <span class="card-balance">${{ cuenta.saldo_disponible|floatformat:"0" }}</span>
+                            <span class="card-balance">${{ cuenta.saldo_disponible|floatformat:2|intcomma }}</span>
                         </div>
                         <div class="card-footer-info">
                             <span class="card-label">{{ cuenta.estado_cuenta.catalogo_nombre }}</span>
@@ -150,7 +151,7 @@
                             </defs>
 
                             <text x="100" y="115" text-anchor="middle" class="donut-value">
-                                ${{ total_ingresos|floatformat:"0" }}
+                                ${{ total_ingresos|floatformat:2|intcomma }}
                             </text>
                         </svg>
                     </div>
@@ -159,14 +160,14 @@
                         <div class="legend-item">
                             <span class="legend-dot expenses"></span>
                             <span class="legend-label">Gastos</span>
-                            <span class="legend-value">${{ gastos_mes|floatformat:"0" }}</span>
-                            <span class="legend-percent">{{ porcentaje_gastos|floatformat:"0" }}%</span>
+                            <span class="legend-value">${{ gastos_mes|floatformat:2|intcomma}}</span>
+                            <span class="legend-percent">{{ porcentaje_gastos|floatformat:2|intcomma }}%</span>
                         </div>
                         <div class="legend-item">
                             <span class="legend-dot savings"></span>
                             <span class="legend-label">Ahorro</span>
-                            <span class="legend-value">${{ ahorro_mes|floatformat:"0" }}</span>
-                            <span class="legend-percent">{{ porcentaje_ahorro|floatformat:"0" }}%</span>
+                            <span class="legend-value">${{ ahorro_mes|floatformat:2|intcomma}}</span>
+                            <span class="legend-percent">{{ porcentaje_ahorro|floatformat:2|intcomma }}%</span>
                         </div>
                     </div>
                 </section>
@@ -179,7 +180,7 @@
                         {% for transaccion in historial %}
                         <div class="movement-item">
                             <span>{{ transaccion.tipo_transaccion.catalogo_nombre }}</span>
-                            <span>-${{ transaccion.monto }}</span>
+                            {{ transaccion.monto|floatformat:2|intcomma }}
                             <small>{{ transaccion.fecha_hora }}</small>
                         </div>
                         {% empty %}

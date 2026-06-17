@@ -3,18 +3,21 @@ from django.contrib import messages
 from django.db.models import Q, Sum
 from django.utils import timezone
 from . import services
-
+from decimal import Decimal, InvalidOperation
 # Importamos los modelos necesarios
 from transacciones.models import Transacciones 
+from django.db import transaction
 from notificaciones.models import Notificaciones 
 from usuarios.models import Usuarios
+
+from .models import Bolsillos
+from transacciones import services as trans_services
 
 def dashboard_view(request):
     usuario_id = request.session.get('usuario_id')
     if not usuario_id:
         return redirect('login')
 
-    # Obtenemos el usuario y la cuenta
     try:
         usuario = Usuarios.objects.get(usuario_id=usuario_id)
         cuenta = services.get_cuenta_usuario(usuario_id)
@@ -25,52 +28,49 @@ def dashboard_view(request):
         messages.error(request, 'No tienes una cuenta activa.')
         return redirect('login')
     
-    # Obtener el nombre desde la tabla Personas
     persona = usuario.personas_set.first()
     nombre_mostrar = persona.nombres if persona else "Usuario"
 
-    # Datos básicos
     bolsillos = services.get_bolsillos(cuenta)
     saldo_total = services.get_saldo_total(cuenta)
 
-    # Historial reciente
     historial = Transacciones.objects.filter(
         Q(cuenta_origen=cuenta) | Q(cuenta_destino=cuenta)
     ).order_by('-fecha_hora')[:5]
 
-    # logica de resumen del mes
     ahora = timezone.now()
     inicio_mes = ahora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
-    # Calculamos gastos (ejemplo: transacciones donde la cuenta es origen)
+    # Convertimos los resultados de Sum (que pueden ser Decimales) explícitamente
     gastos_mes = Transacciones.objects.filter(
         cuenta_origen=cuenta,
         fecha_hora__gte=inicio_mes
-    ).aggregate(total=Sum('monto'))['total'] or 0
+    ).aggregate(total=Sum('monto'))['total'] or Decimal('0')
 
-    # Calculamos ahorros (ejemplo: transferencias hacia bolsillos)
     ahorro_mes = Transacciones.objects.filter(
         cuenta_destino=cuenta,
         fecha_hora__gte=inicio_mes
-    ).aggregate(total=Sum('monto'))['total'] or 0
+    ).aggregate(total=Sum('monto'))['total'] or Decimal('0')
 
     total_ingresos = gastos_mes + ahorro_mes
     
-    # Cálculos para el gráfico SVG
-    # La circunferencia de un círculo con r=70 es aprox 439.8
-    circunferencia = 439.8
+    # Cálculos para el gráfico SVG usando Decimal para todo
+    circunferencia = Decimal('439.8')
+    ciento = Decimal('100')
+
     if total_ingresos > 0:
-        porcentaje_gastos = (gastos_mes / total_ingresos) * 100
-        porcentaje_ahorro = (ahorro_mes / total_ingresos) * 100
-        dasharray_gastos = (porcentaje_gastos / 100) * circunferencia
-        dasharray_ahorro = (porcentaje_ahorro / 100) * circunferencia
+        porcentaje_gastos = (gastos_mes / total_ingresos) * ciento
+        porcentaje_ahorro = (ahorro_mes / total_ingresos) * ciento
+        # Los cálculos de dasharray ahora son todos Decimal
+        dasharray_gastos = (porcentaje_gastos / ciento) * circunferencia
+        dasharray_ahorro = (porcentaje_ahorro / ciento) * circunferencia
         dashoffset_ahorro = -dasharray_gastos
     else:
-        porcentaje_gastos = 0
-        porcentaje_ahorro = 0
-        dasharray_gastos = 0
-        dasharray_ahorro = 0
-        dashoffset_ahorro = 0
+        porcentaje_gastos = Decimal('0')
+        porcentaje_ahorro = Decimal('0')
+        dasharray_gastos = Decimal('0')
+        dasharray_ahorro = Decimal('0')
+        dashoffset_ahorro = Decimal('0')
 
     context = {
         'nombre_usuario': nombre_mostrar,
@@ -80,8 +80,6 @@ def dashboard_view(request):
         'saldo_total': saldo_total,
         'historial': historial,
         'no_leidas': Notificaciones.objects.filter(usuario=usuario, leida=False).count(),
-        
-        # Variables para el Resumen del Mes
         'gastos_mes': gastos_mes,
         'ahorro_mes': ahorro_mes,
         'total_ingresos': total_ingresos,
@@ -91,7 +89,6 @@ def dashboard_view(request):
         'dasharray_ahorro': dasharray_ahorro,
         'dashoffset_ahorro': dashoffset_ahorro,
     }
-    print("Datos enviados al template:", context['total_ingresos'])
     return render(request, 'dashboard/dashboard_usuario.html', context)
 
 def bolsillos_view(request):
@@ -153,41 +150,122 @@ def crear_bolsillo_view(request):
 
     if request.method == 'POST':
         nombre = request.POST.get('nombre')
-        monto = request.POST.get('monto') or 0
+        try:
+            monto = Decimal(request.POST.get('monto') or 0)
+        except (InvalidOperation, ValueError):
+            messages.error(request, "Monto inválido.")
+            return redirect('cuentas:bolsillos')
+            
         usuario_id = request.session['usuario_id']
         cuenta = services.get_cuenta_usuario(usuario_id)
 
         try:
-            services.crear_bolsillo(cuenta, nombre)
-            # Si tiene monto inicial, descontar del saldo disponible
-            if float(monto) > 0:
-                from transacciones import services as trans_services
-                bolsillo = cuenta.bolsillos_set.order_by('-bolsillo_id').first()
-                trans_services.transferir_a_bolsillo(cuenta, bolsillo, float(monto))
+            # transaction.atomic garantiza que o se crea todo o no se crea nada
+            with transaction.atomic():
+                # 1. Crear el bolsillo
+                services.crear_bolsillo(cuenta, nombre)
+                
+                # 2. Si hay monto, transferir
+                if monto > 0:
+                    bolsillo = cuenta.bolsillos_set.order_by('-bolsillo_id').first()
+                    
+                    # Llamamos al servicio que debe manejar la lógica financiera
+                    trans_services.transferir_a_bolsillo(cuenta, bolsillo, monto)
+            
             messages.success(request, f'Bolsillo "{nombre}" creado exitosamente.')
         except Exception as e:
+            # Esto captura cualquier error de saldo insuficiente o base de datos
             messages.error(request, f'Error: {str(e)}')
 
-    return redirect('bolsillos')
-
+    return redirect('cuentas:bolsillos')
 # views.py
 def eliminar_bolsillo_view(request, bolsillo_id):
     if not request.session.get('usuario_id'):
         return redirect('login')
+
     if request.method == 'POST':
-        from .models import Bolsillos
         try:
             bolsillo = Bolsillos.objects.get(
                 bolsillo_id=bolsillo_id,
                 cuenta__usuario_id=request.session['usuario_id']
             )
-            # Devolver saldo al disponible
+
+            # 1. NUEVA VALIDACIÓN: Obligar a retirar el dinero
             if bolsillo.saldo > 0:
-                bolsillo.cuenta.saldo_disponible += bolsillo.saldo
-                bolsillo.cuenta.saldo_bolsillos -= bolsillo.saldo
-                bolsillo.cuenta.save()
+                messages.error(request, 'El bolsillo aún tiene fondos. Debes retirar el dinero antes de eliminarlo.')
+                return redirect('cuentas:bolsillos')
+
+            # 2. VERIFICACIÓN DE INTEGRIDAD (Historial de transacciones)
+            if bolsillo.transacciones_set.exists():
+                messages.error(request, 'No puedes eliminar este bolsillo porque tiene un historial de transacciones.')
+                return redirect('cuentas:bolsillos')
+
+            # 3. ELIMINACIÓN
+            # Como ya validamos que el saldo es 0, no hace falta modificar el saldo de la cuenta
             bolsillo.delete()
-            messages.success(request, 'Bolsillo eliminado.')
+            messages.success(request, 'Bolsillo eliminado correctamente.')
+
         except Bolsillos.DoesNotExist:
             messages.error(request, 'Bolsillo no encontrado.')
-    return redirect('bolsillos')
+        except Exception as e:
+            messages.error(request, f'No se pudo eliminar el bolsillo: {str(e)}')
+
+    return redirect('cuentas:bolsillos')
+
+
+def procesar_dinero_bolsillo(request):
+    if request.method != 'POST':
+        return redirect('cuentas:bolsillos')
+
+    bolsillo_id = request.POST.get('bolsillo_id')
+    accion = request.POST.get('accion')
+    
+    try:
+        monto = Decimal(request.POST.get('monto') or 0)
+        # VALIDACIÓN DE SEGURIDAD: Evitar montos menores o iguales a cero
+        if monto <= 0:
+            messages.error(request, 'El monto debe ser mayor a cero.')
+            return redirect('cuentas:bolsillos')
+    except (InvalidOperation, ValueError):
+        messages.error(request, 'Monto inválido.')
+        return redirect('cuentas:bolsillos')
+    
+    try:
+        # Usamos transaction.atomic para garantizar la integridad financiera
+        with transaction.atomic():
+            bolsillo = Bolsillos.objects.select_for_update().get(
+                bolsillo_id=bolsillo_id, 
+                cuenta__usuario_id=request.session['usuario_id']
+            )
+            cuenta = bolsillo.cuenta
+            
+            if accion == 'agregar':
+                if cuenta.saldo_disponible >= monto:
+                    cuenta.saldo_disponible -= monto
+                    bolsillo.saldo += monto
+                    cuenta.saldo_bolsillos += monto 
+                    cuenta.save()
+                    bolsillo.save()
+                    messages.success(request, 'Dinero agregado al bolsillo.')
+                else:
+                    messages.error(request, 'No tienes suficiente saldo disponible.')
+            
+            elif accion == 'retirar':
+                if bolsillo.saldo >= monto:
+                    bolsillo.saldo -= monto
+                    cuenta.saldo_disponible += monto
+                    cuenta.saldo_bolsillos -= monto 
+                    cuenta.save()
+                    bolsillo.save()
+                    messages.success(request, 'Dinero retirado correctamente.')
+                else:
+                    messages.error(request, 'El bolsillo no tiene fondos suficientes.')
+            else:
+                messages.error(request, 'Acción no reconocida.')
+                    
+    except Bolsillos.DoesNotExist:
+        messages.error(request, 'Bolsillo no encontrado.')
+    except Exception as e:
+        messages.error(request, f'Error inesperado: {str(e)}')
+            
+    return redirect('cuentas:bolsillos')

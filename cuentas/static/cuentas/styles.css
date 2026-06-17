@@ -256,22 +256,6 @@ body {
     font-weight: 600;
 }
 
-.add-btn {
-    padding: 6px 14px;
-    background: linear-gradient(135deg, #7c3aed, #a855f7);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.add-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(124,58,237,0.3);
-}
 
 /* SUMMARY CARDS */
 .summary-cards {
@@ -592,7 +576,6 @@ body {
     .greeting h1    { font-size: 18px; }
     .greeting p     { display: none; }
     .top-header     { gap: 10px; }
-    .add-btn        { padding: 6px 12px; font-size: 12px; }
     .summary-cards  { gap: 8px; }
     .card           { padding: 10px; }
     .card-amount    { font-size: 18px; }
@@ -610,3 +593,61 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+
+.btn-retirar {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #f43f5e, #ec4899);
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-retirar:hover { opacity: 0.9; }
+
+/* Asegura que el contenedor del modal tenga fondo blanco */
+.modal-content {
+    background-color: #ffffff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    /* Añadimos un pequeño margen interno para que nada toque los bordes */
+}
+
+/* Contenedor de botones con fondo explícito */
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 25px;
+    padding-top: 15px;
+    background-color: #ffffff; /* Asegura que el fondo sea blanco */
+    width: 100%;               /* Asegura que ocupe el ancho disponible */
+}
+
+/* Estilos de botones para mayor claridad */
+.modal-actions button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+/* Botón Confirmar (Azul) */
+.modal-actions button[type="submit"] {
+    background-color: #2563eb;
+    color: #ffffff;
+}
+
+/* Botón Cancelar (Gris claro) */
+.modal-actions button[type="button"] {
+    background-color: #e5e7eb;
+    color: #374151;
+}

@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeBolsillos() {
     setupSearchFunctionality();
     setupPocketActions();
-    setupNavigationHighlight();
+    // setupNavigationHighlight(); // Asegúrate de tener esta definida si la usas
 }
 
 // ============================================
@@ -15,38 +15,24 @@ function initializeBolsillos() {
 
 function setupSearchFunctionality() {
     const searchInput = document.getElementById('searchInput');
-    const filterBtn = document.querySelector('.filter-btn');
     const pocketsList = document.getElementById('pocketsList');
+    if (!searchInput || !pocketsList) return;
+
     const pocketItems = pocketsList.querySelectorAll('.pocket-item');
 
-    // Búsqueda por nombre
     searchInput.addEventListener('input', function(e) {
         const searchTerm = e.target.value.toLowerCase();
-
         pocketItems.forEach(item => {
             const title = item.querySelector('.pocket-title').textContent.toLowerCase();
-            if (title.includes(searchTerm)) {
-                item.style.display = '';
-            } else {
-                item.style.display = 'none';
-            }
+            item.style.display = title.includes(searchTerm) ? '' : 'none';
         });
-
-        // Mensaje si no hay resultados
         updateEmptyState(pocketsList);
-    });
-
-    // Botón de filtro (placeholder para futura funcionalidad)
-    filterBtn.addEventListener('click', function() {
-        console.log('Filtro activado');
     });
 }
 
-// Actualizar estado vacío
 function updateEmptyState(container) {
     const visibleItems = container.querySelectorAll('.pocket-item:not([style*="display: none"])');
     let emptyState = container.querySelector('.empty-state');
-
     if (visibleItems.length === 0) {
         if (!emptyState) {
             emptyState = document.createElement('div');
@@ -60,7 +46,7 @@ function updateEmptyState(container) {
 }
 
 // ============================================
-// ACCIONES DE BOLSILLOS
+// ACCIONES DE BOLSILLOS (CORREGIDO)
 // ============================================
 
 function setupPocketActions() {
@@ -72,71 +58,45 @@ function setupPocketActions() {
         const removeBtn = e.target.closest('.remove-pocket-btn');
         const menuBtn = e.target.closest('.pocket-menu-btn');
 
-        if (addBtn) handleAddMoney(addBtn);
-        else if (removeBtn) handleRemoveMoney(removeBtn);
+        if (addBtn) abrirModalAccion(addBtn.dataset.id, 'agregar');
+        else if (removeBtn) abrirModalAccion(removeBtn.dataset.id, 'retirar');
         else if (menuBtn) handlePocketMenu(menuBtn);
     });
 }
 
-function handleAddMoney(button) {
-    const pocketItem = button.closest('.pocket-item');
-    const pocketTitle = pocketItem.querySelector('.pocket-title').textContent;
-    alert(`Agregar dinero al bolsillo: ${pocketTitle}`);
-}
+function abrirModalAccion(id, accion) {
+    const modal = document.getElementById('modalAccionDinero');
+    const pocketIdInput = document.getElementById('pocketIdInput'); 
+    const accionInput = document.getElementById('accionInput');
+    const title = document.getElementById('modalAccionTitle');
 
-function handleRemoveMoney(button) {
-    const pocketItem = button.closest('.pocket-item');
-    const pocketTitle = pocketItem.querySelector('.pocket-title').textContent;
-    alert(`Retirar dinero del bolsillo: ${pocketTitle}`);
-}
-
-function handlePocketMenu(button) {
-    const pocketItem = button.closest('.pocket-item');
-    const pocketTitle = pocketItem.querySelector('.pocket-title').textContent;
-    const menu = ['Ver detalles', 'Editar bolsillo', 'Ver historial', 'Eliminar bolsillo'];
-    const option = prompt(
-        `Opciones para ${pocketTitle}:\n\n${menu.map((m, i) => `${i + 1}. ${m}`).join('\n')}`, '1'
-    );
-    if (option) {
-        const selectedOption = parseInt(option);
-        if (selectedOption >= 1 && selectedOption <= menu.length) {
-            console.log(`Seleccionado: ${menu[selectedOption - 1]}`);
-        }
+    if (!modal || !pocketIdInput || !accionInput) {
+        console.error("Error: Elementos del modal no encontrados en el HTML.");
+        return;
     }
+
+    pocketIdInput.value = id;
+    accionInput.value = accion;
+    title.textContent = accion === 'agregar' ? 'Agregar dinero' : 'Retirar dinero';
+    modal.classList.add('active');
+}
+
+function cerrarModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.remove('active');
 }
 
 // ============================================
-// MODAL CREAR BOLSILLO
+// OTROS MODALES (CREAR BOLSILLO)
 // ============================================
 
 const btnCrearBolsillo = document.getElementById('btnCrearBolsillo');
 const modalOverlay = document.getElementById('modalOverlay');
-const modalClose = document.getElementById('modalClose');
-const btnCancelar = document.getElementById('btnCancelar');
 
-if (btnCrearBolsillo) {
-    btnCrearBolsillo.addEventListener('click', () => {
-        modalOverlay.classList.add('active');
-    });
-}
-
-if (modalClose) {
-    modalClose.addEventListener('click', () => {
-        modalOverlay.classList.remove('active');
-    });
-}
-
-if (btnCancelar) {
-    btnCancelar.addEventListener('click', () => {
-        modalOverlay.classList.remove('active');
-    });
-}
-
-if (modalOverlay) {
+if (btnCrearBolsillo && modalOverlay) {
+    btnCrearBolsillo.addEventListener('click', () => modalOverlay.classList.add('active'));
     modalOverlay.addEventListener('click', (e) => {
-        if (e.target === modalOverlay) {
-            modalOverlay.classList.remove('active');
-        }
+        if (e.target === modalOverlay) modalOverlay.classList.remove('active');
     });
 }
 
@@ -151,14 +111,3 @@ function formatCurrency(value) {
         minimumFractionDigits: 0
     }).format(value);
 }
-
-function calculatePercentage(current, total) {
-    return Math.round((current / total) * 100);
-}
-
-// ============================================
-// INIT
-// ============================================
-document.addEventListener('DOMContentLoaded', () => {
-    setupPocketActions();
-});
