@@ -146,3 +146,7 @@ STATICFILES_FINDERS = [
 ]
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://billetera-digital-production.up.railway.app',
+]
